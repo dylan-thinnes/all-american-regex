@@ -1,3 +1,4 @@
+{-# LANGUAGE RecordWildCards #-}
 module Main where
 
 import qualified Data.Map as M
@@ -6,10 +7,27 @@ import Data.List (intercalate)
 data Trie = Prefix String [Trie] | Leaf String
   deriving (Show, Eq, Ord)
 
-main :: IO ()
-main = do
+data RenderOptions = RenderOptions
+  { mode :: RenderMode
+  , redRGB, whiteRGB, blueRGB :: (Int, Int, Int)
+  }
+  deriving (Show, Eq, Ord)
+
+data RenderMode = HTML | ANSI
+  deriving (Show, Eq, Ord)
+
+main = allAmericanRegex ANSI
+
+allAmericanRegex :: RenderMode -> IO ()
+allAmericanRegex mode = do
   states <- lines <$> readFile "state"
-  putStrLn $ renderMany $ toTries states
+  let options = RenderOptions
+        { mode = mode
+        , blueRGB = (60,59,110)
+        , redRGB = (178,34,52)
+        , whiteRGB = (255,255,255)
+        }
+  putStrLn $ renderMany options $ toTries states
   pure ()
 
 toTries :: [String] -> [Trie]
@@ -33,9 +51,17 @@ toTrie (prefixChar, strs) =
     [Leaf str] -> Leaf (prefixChar : str)
     _ -> Prefix [prefixChar] tries
 
-renderOne :: Trie -> String
-renderOne (Leaf str) = str
-renderOne (Prefix cs tries) = cs ++ renderMany tries
+renderOne :: RenderOptions -> Trie -> String
+renderOne opts (Leaf str) = str
+renderOne opts (Prefix cs tries) = cs ++ renderMany opts tries
 
-renderMany :: [Trie] -> String
-renderMany tries = "\ESC[38;2;60;59;110m(\ESC[0m" ++ intercalate "\ESC[38;2;178;34;52m|\ESC[0m" (map renderOne tries) ++ "\ESC[38;2;60;59;110m)\ESC[0m"
+renderMany :: RenderOptions -> [Trie] -> String
+renderMany opts@RenderOptions {..} tries =
+  case mode of
+    HTML -> error "HTML"
+    ANSI ->
+      renderRGBAnsi blueRGB "(" ++ intercalate (renderRGBAnsi redRGB "|") (map (renderOne opts) tries) ++ renderRGBAnsi blueRGB ")"
+
+renderRGBAnsi :: (Int, Int, Int) -> String -> String
+renderRGBAnsi (r, g, b) str =
+  "\ESC[38;2;" ++ intercalate ";" (map show [r, g, b]) ++ "m" ++ str ++ "\ESC[0m"
