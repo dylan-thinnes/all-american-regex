@@ -10,6 +10,7 @@ data Trie = Prefix String [Trie] | Leaf String
 data RenderOptions = RenderOptions
   { mode :: RenderMode
   , redRGB, whiteRGB, blueRGB :: (Int, Int, Int)
+  , maxWidth :: Maybe Int
   }
   deriving (Show, Eq, Ord)
 
@@ -26,6 +27,7 @@ allAmericanRegex mode = do
         , blueRGB = (60,59,110)
         , redRGB = (178,34,52)
         , whiteRGB = (255,255,255)
+        , maxWidth = Just 41
         }
   putStrLn $ renderTop options $ toTries states
   pure ()
@@ -52,20 +54,46 @@ toTrie (prefixChar, strs) =
     _ -> Prefix [prefixChar] tries
 
 renderTop :: RenderOptions -> [Trie] -> String
-renderTop opts tries =
-  (case mode opts of
-     HTML -> "<style>body { background-color: black; }</style>\n"
-     ANSI -> ""
-  ) ++
-  renderMany opts tries
+renderTop opts@RenderOptions {..} tries =
+  case mode of
+    HTML ->
+      let grey = (120, 120, 120)
+          header = renderRGB HTML grey "# All-American Regex"
+          slash = renderRGB HTML grey "/"
+      in
+      unlines
+        [ "<style>body { background-color: black; } #regex { font-family: monospace; }</style>\n"
+        , "<pre id=\"regex\">"
+        , joinBookends header
+        , intercalate "<br/>" $
+            map joinBookends $
+              maybe pure chunks maxWidth $
+                slash ++ renderMany opts tries ++ slash
+        , "</pre>"
+        ]
+    _ ->
+      unlines $
+        map joinBookends $
+          maybe pure chunks maxWidth $
+            renderMany opts tries
 
-renderOne :: RenderOptions -> Trie -> String
+chunks :: Int -> [a] -> [[a]]
+chunks size [] = []
+chunks size cs =
+  let (chunk, rest) = splitAt size cs
+  in
+  chunk : chunks size rest
+
+renderOne :: RenderOptions -> Trie -> [(String, Char, String)]
 renderOne opts@RenderOptions {..} (Leaf str) =
   renderRGB mode whiteRGB str
 renderOne opts@RenderOptions {..} (Prefix prefix tries) =
   renderRGB mode whiteRGB prefix ++ renderMany opts tries
 
-renderMany :: RenderOptions -> [Trie] -> String
+joinBookends :: [(String, Char, String)] -> String
+joinBookends = concatMap $ \(pre, c, post) -> pre ++ [c] ++ post
+
+renderMany :: RenderOptions -> [Trie] -> [(String, Char, String)]
 renderMany opts@RenderOptions {..} tries =
   concat
     [ renderRGB mode blueRGB "("
@@ -74,18 +102,26 @@ renderMany opts@RenderOptions {..} tries =
     , renderRGB mode blueRGB ")"
     ]
 
-renderRGB :: RenderMode -> (Int, Int, Int) -> String -> String
-renderRGB ANSI (r, g, b) str =
-  concat
-    [ "\ESC[38;2;"
-    , intercalate ";" $ map show [r, g, b]
-    , "m" ++ str ++ "\ESC[0m"
-    ]
-renderRGB HTML (r, g, b) str =
-  concat
-    [ "<span style=\"color: rgb("
-    , intercalate "," $ map show [r, g, b]
-    , ")\">"
-    , str
-    , "</span>"
-    ]
+renderRGB :: RenderMode -> (Int, Int, Int) -> String -> [(String, Char, String)]
+renderRGB mode color str =
+  let (pre, post) = rgbBookends mode color
+  in
+  map (pre,,post) str
+
+rgbBookends :: RenderMode -> (Int, Int, Int) -> (String, String)
+rgbBookends ANSI (r, g, b) =
+  ( concat
+      [ "\ESC[38;2;"
+      , intercalate ";" $ map show [r, g, b]
+      , "m"
+      ]
+  , "\ESC[0m"
+  )
+rgbBookends HTML (r, g, b) =
+  ( concat
+      [ "<span style=\"color: rgb("
+      , intercalate "," $ map show [r, g, b]
+      , ")\">"
+      ]
+  , "</span>"
+  )
