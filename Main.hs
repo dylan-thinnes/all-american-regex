@@ -33,7 +33,7 @@ allAmericanRegex mode = do
   states <- lines <$> readFile "state"
   let options = RenderOptions
         { mode = mode
-        , blueStyle = TextOptions TSBold (60,59,110)
+        , blueStyle = TextOptions TSBold (95,92,209)
         , redStyle = TextOptions TSBold (178,34,52)
         , whiteStyle = TextOptions TSPlain (255,255,255)
         , maxWidth = Just 41
