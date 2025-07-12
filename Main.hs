@@ -38,4 +38,4 @@ renderOne (Leaf str) = str
 renderOne (Prefix cs tries) = cs ++ renderMany tries
 
 renderMany :: [Trie] -> String
-renderMany tries = "(" ++ intercalate "|" (map renderOne tries) ++ ")"
+renderMany tries = "\ESC[38;2;60;59;110m(\ESC[0m" ++ intercalate "\ESC[38;2;178;34;52m|\ESC[0m" (map renderOne tries) ++ "\ESC[38;2;60;59;110m)\ESC[0m"
