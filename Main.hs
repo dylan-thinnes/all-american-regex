@@ -71,7 +71,8 @@ renderTop opts@RenderOptions {..} tries =
           slash = renderStyle HTML grey "/"
       in
       unlines
-        [ "<style>body { background-color: black; } #regex { font-family: monospace; font-size: min(3.5vw, 5vh); }</style>\n"
+        [ "<title>All-American Regex</title>"
+        , "<style>body { background-color: black; } #regex { font-family: monospace; font-size: min(3.5vw, 5vh); }</style>\n"
         , "<pre id=\"regex\">"
         , joinBookends header
         , intercalate "<br/>" $
