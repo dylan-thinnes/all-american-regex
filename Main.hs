@@ -14,10 +14,10 @@ data RenderOptions = RenderOptions
   }
   deriving (Show, Eq, Ord)
 
-data RenderMode = HTML | ANSI
+data RenderMode = HTML | ANSI | Plain
   deriving (Show, Eq, Ord)
 
-main = allAmericanRegex HTML
+main = allAmericanRegex Plain
 
 allAmericanRegex :: RenderMode -> IO ()
 allAmericanRegex mode = do
@@ -125,3 +125,4 @@ rgbBookends HTML (r, g, b) =
       ]
   , "</span>"
   )
+rgbBookends Plain _ = ("", "")
