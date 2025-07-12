@@ -47,7 +47,7 @@ toTrie (prefixChar, strs) =
   let tries = toTries strs
   in
   case tries of
-    [Prefix cs subtries] -> Prefix (prefixChar : cs) subtries
+    [Prefix prefix subtries] -> Prefix (prefixChar : prefix) subtries
     [Leaf str] -> Leaf (prefixChar : str)
     _ -> Prefix [prefixChar] tries
 
@@ -60,15 +60,32 @@ renderTop opts tries =
   renderMany opts tries
 
 renderOne :: RenderOptions -> Trie -> String
-renderOne opts (Leaf str) = renderRGB (mode opts) (whiteRGB opts) str
-renderOne opts (Prefix cs tries) = renderRGB (mode opts) (whiteRGB opts) cs ++ renderMany opts tries
+renderOne opts@RenderOptions {..} (Leaf str) =
+  renderRGB mode whiteRGB str
+renderOne opts@RenderOptions {..} (Prefix prefix tries) =
+  renderRGB mode whiteRGB prefix ++ renderMany opts tries
 
 renderMany :: RenderOptions -> [Trie] -> String
 renderMany opts@RenderOptions {..} tries =
-  renderRGB mode blueRGB "(" ++ intercalate (renderRGB mode redRGB "|") (map (renderOne opts) tries) ++ renderRGB mode blueRGB ")"
+  concat
+    [ renderRGB mode blueRGB "("
+    , intercalate (renderRGB mode redRGB "|") $
+        map (renderOne opts) tries
+    , renderRGB mode blueRGB ")"
+    ]
 
 renderRGB :: RenderMode -> (Int, Int, Int) -> String -> String
 renderRGB ANSI (r, g, b) str =
-  "\ESC[38;2;" ++ intercalate ";" (map show [r, g, b]) ++ "m" ++ str ++ "\ESC[0m"
+  concat
+    [ "\ESC[38;2;"
+    , intercalate ";" $ map show [r, g, b]
+    , "m" ++ str ++ "\ESC[0m"
+    ]
 renderRGB HTML (r, g, b) str =
-  "<span style=\"color: rgb(" ++ intercalate "," (map show [r, g, b]) ++ ")\">" ++ str ++ "</span>"
+  concat
+    [ "<span style=\"color: rgb("
+    , intercalate "," $ map show [r, g, b]
+    , ")\">"
+    , str
+    , "</span>"
+    ]
