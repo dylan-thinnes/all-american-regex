@@ -16,7 +16,7 @@ data RenderOptions = RenderOptions
 data RenderMode = HTML | ANSI
   deriving (Show, Eq, Ord)
 
-main = allAmericanRegex ANSI
+main = allAmericanRegex HTML
 
 allAmericanRegex :: RenderMode -> IO ()
 allAmericanRegex mode = do
@@ -27,7 +27,7 @@ allAmericanRegex mode = do
         , redRGB = (178,34,52)
         , whiteRGB = (255,255,255)
         }
-  putStrLn $ renderMany options $ toTries states
+  putStrLn $ renderTop options $ toTries states
   pure ()
 
 toTries :: [String] -> [Trie]
@@ -51,17 +51,24 @@ toTrie (prefixChar, strs) =
     [Leaf str] -> Leaf (prefixChar : str)
     _ -> Prefix [prefixChar] tries
 
+renderTop :: RenderOptions -> [Trie] -> String
+renderTop opts tries =
+  (case mode opts of
+     HTML -> "<style>body { background-color: black; }</style>\n"
+     ANSI -> ""
+  ) ++
+  renderMany opts tries
+
 renderOne :: RenderOptions -> Trie -> String
-renderOne opts (Leaf str) = str
-renderOne opts (Prefix cs tries) = cs ++ renderMany opts tries
+renderOne opts (Leaf str) = renderRGB (mode opts) (whiteRGB opts) str
+renderOne opts (Prefix cs tries) = renderRGB (mode opts) (whiteRGB opts) cs ++ renderMany opts tries
 
 renderMany :: RenderOptions -> [Trie] -> String
 renderMany opts@RenderOptions {..} tries =
-  case mode of
-    HTML -> error "HTML"
-    ANSI ->
-      renderRGBAnsi blueRGB "(" ++ intercalate (renderRGBAnsi redRGB "|") (map (renderOne opts) tries) ++ renderRGBAnsi blueRGB ")"
+  renderRGB mode blueRGB "(" ++ intercalate (renderRGB mode redRGB "|") (map (renderOne opts) tries) ++ renderRGB mode blueRGB ")"
 
-renderRGBAnsi :: (Int, Int, Int) -> String -> String
-renderRGBAnsi (r, g, b) str =
+renderRGB :: RenderMode -> (Int, Int, Int) -> String -> String
+renderRGB ANSI (r, g, b) str =
   "\ESC[38;2;" ++ intercalate ";" (map show [r, g, b]) ++ "m" ++ str ++ "\ESC[0m"
+renderRGB HTML (r, g, b) str =
+  "<span style=\"color: rgb(" ++ intercalate "," (map show [r, g, b]) ++ ")\">" ++ str ++ "</span>"
