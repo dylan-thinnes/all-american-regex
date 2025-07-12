@@ -71,8 +71,16 @@ renderTop opts@RenderOptions {..} tries =
           slash = renderStyle HTML grey "/"
       in
       unlines
-        [ "<title>All-American Regex</title>"
+        [ "<html>"
+        , "<head>"
+        , "<title>All-American Regex</title>"
         , "<style>body { background-color: black; } #regex { font-family: monospace; font-size: min(3.5vw, 5vh); }</style>\n"
+        , "<link rel=\"apple-touch-icon\" sizes=\"180x180\" href=\"/apple-touch-icon.png\">"
+        , "<link rel=\"icon\" type=\"image/png\" sizes=\"32x32\" href=\"/favicon-32x32.png\">"
+        , "<link rel=\"icon\" type=\"image/png\" sizes=\"16x16\" href=\"/favicon-16x16.png\">"
+        , "<link rel=\"manifest\" href=\"/site.webmanifest\">"
+        , "</head>"
+        , "<body>"
         , "<pre id=\"regex\">"
         , joinBookends header
         , intercalate "<br/>" $
@@ -80,6 +88,8 @@ renderTop opts@RenderOptions {..} tries =
               maybe pure chunks maxWidth $
                 slash ++ renderMany opts tries ++ slash
         , "</pre>"
+        , "</body>"
+        , "</html>"
         ]
     _ ->
       unlines $
